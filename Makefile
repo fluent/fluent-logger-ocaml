@@ -51,5 +51,5 @@ uninstall:
 
 .PHONY: clean
 clean:
-	rm -f *.cmi *.cmo *.cmx *.cma *.cmxa *.a *.o
+	rm -rf *.cmi *.cmo *.cmx *.cma *.cmxa *.a *.o depend
 
