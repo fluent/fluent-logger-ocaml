@@ -1,4 +1,4 @@
 description = "A structured logger for Fluentd (OCaml)"
-requires = "extlib msgpack"
+requires = "unix extlib msgpack"
 archive(byte) = "fluent_logger.cma"
 archive(native) = "fluent_logger.cmxa"

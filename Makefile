@@ -15,14 +15,14 @@ SOURCES = $(BASE_FILENAME).mli $(BASE_FILENAME).ml
 ARCHIVE  = $(BASE_FILENAME).cma
 XARCHIVE = $(BASE_FILENAME).cmxa
 
-REQUIRES = unix,extlib,msgpack
+REQUIRES = msgpack
 
 .PHONY: all opt
 all: $(ARCHIVE)
 opt: $(XARCHIVE)
 
 $(ARCHIVE):
-	$(OCAMLC) -a -o $(ARCHIVE) -package "$(REQUIRES)" -linkpkg $(SOURCES)
+	$(OCAMLC) -a -o $(ARCHIVE) -package "$(REQUIRES)" $(SOURCES)
 
 $(XARCHIVE):
 	$(OCAMLOPT) -a -o $(XARCHIVE) -package "$(REQUIRES)" $(SOURCES)
@@ -44,7 +44,8 @@ include depend
 
 .PHONY: install uninstall
 install: all
-	ocamlfind install -patch-version $(VERSION) $(NAME) META $(ARCHIVE) $(BASE_FILENAME).cmi -optional $(XARCHIVE) $(BASE_FILENAME).cmx 
+	ocamlfind install -patch-version $(VERSION) $(NAME) META $(ARCHIVE) $(BASE_FILENAME).cmi \
+        -optional $(XARCHIVE) $(BASE_FILENAME).cmx $(BASE_FILENAME).a
 
 uninstall:
 	ocamlfind remove $(NAME)
