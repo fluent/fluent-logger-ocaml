@@ -1,7 +1,7 @@
 let () =
   Printexc.record_backtrace true;
-  let open Fluent_logger in
-  let logger = create () in
+  let logger = Fluent_logger.create () in
+  let open Fluent_logger.Inet in
   print_endline (string_of_bool (
     post logger "production" (
       `FixMap [
