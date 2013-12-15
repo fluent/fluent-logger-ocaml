@@ -1,5 +1,5 @@
 .gitignore
-depend
+lib/depend
 *.a
 *.cma
 *.cmi

@@ -1,56 +1,30 @@
-NAME     = fluent-logger
-BASE_FILENAME = fluent_logger
+PKG_NAME  = fluent-logger
 
-VERSION  = 1.0.0
+export OCAMLC   = ocamlfind ocamlc
+export OCAMLOPT = ocamlfind ocamlopt
+export OCAMLDEP = ocamldep
 
-OCAMLC   = ocamlfind ocamlc
-OCAMLOPT = ocamlfind ocamlopt
-OCAMLDEP = ocamldep
+.PHONY: all opt install uninstall example clean
 
-OBJECTS  = 
-XOBJECTS = 
+all:
+	make -C lib all
 
-SOURCES = $(BASE_FILENAME).mli $(BASE_FILENAME).ml
+opt:
+	make -C lib opt
 
-ARCHIVE  = $(BASE_FILENAME).cma
-XARCHIVE = $(BASE_FILENAME).cmxa
-
-REQUIRES = msgpack
-
-.PHONY: all opt
-all: $(ARCHIVE)
-opt: $(XARCHIVE)
-
-$(ARCHIVE):
-	$(OCAMLC) -a -o $(ARCHIVE) -package "$(REQUIRES)" $(SOURCES)
-
-$(XARCHIVE):
-	$(OCAMLOPT) -a -o $(XARCHIVE) -package "$(REQUIRES)" $(SOURCES)
-
-.SUFFIXES: .cmo .cmi .cmx .ml .mli
-.ml.cmo:
-	$(OCAMLC) -package "$(REQUIRES)" -c $<
-
-.mli.cmi:
-	$(OCAMLC) -package "$(REQUIRES)" -c $<
-
-.ml.cmx:
-	$(OCAMLOPT) -package "$(REQUIRES)" -c $<
-
-depend: *.ml *.mli
-	$(OCAMLDEP) *.ml *.mli >depend
-
-include depend
-
-.PHONY: install uninstall
-install: all
-	ocamlfind install -patch-version $(VERSION) $(NAME) META $(ARCHIVE) $(BASE_FILENAME).cmi \
-        -optional $(XARCHIVE) $(BASE_FILENAME).cmx $(BASE_FILENAME).a
+install: all opt
+	ocamlfind install $(PKG_NAME) META \
+        lib/fluent_logger.cma lib/fluent_logger.cmi \
+        -optional \
+        lib/fluent_logger.cmxa lib/fluent_logger.cmx lib/fluent_logger.a
 
 uninstall:
-	ocamlfind remove $(NAME)
+	ocamlfind remove $(PKG_NAME)
 
-.PHONY: clean
+example:
+	make -C example all
+
 clean:
-	rm -rf *.cmi *.cmo *.cmx *.cma *.cmxa *.a *.o depend
+	make -C example clean
+	make -C lib clean
 
