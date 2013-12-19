@@ -1,10 +1,10 @@
 PKG_NAME  = fluent-logger
 
-export OCAMLC   = ocamlfind ocamlc
-export OCAMLOPT = ocamlfind ocamlopt
+export OCAMLC   = ocamlfind ocamlc -g
+export OCAMLOPT = ocamlfind ocamlopt -g
 export OCAMLDEP = ocamldep
 
-.PHONY: all opt install uninstall example clean
+.PHONY: all opt install uninstall test example clean
 
 all:
 	make -C lib all
@@ -24,7 +24,11 @@ uninstall:
 example:
 	make -C example all
 
+test:
+	make -C test all
+
 clean:
 	make -C example clean
+	make -C test clean
 	make -C lib clean
 

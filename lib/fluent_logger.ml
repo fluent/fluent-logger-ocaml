@@ -95,4 +95,3 @@ let create_for_inet ?(bufsize:int = 8 * 1024 * 1024) ?(conn_timeout:int = 3)
   Inet.create_with_sender ~bufsize sender
 
 let create = create_for_inet
-
