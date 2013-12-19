@@ -7,3 +7,6 @@ lib/depend
 *.cmx
 *.cmxa
 *.o
+example/example
+test/fluent_logger_test
+test/oUnit-anon.cache
