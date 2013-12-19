@@ -7,12 +7,9 @@ export OCAMLDEP = ocamldep
 .PHONY: all opt install uninstall test example clean
 
 all:
-	make -C lib all
+	make -C lib all opt
 
-opt:
-	make -C lib opt
-
-install: all opt
+install: all
 	ocamlfind install $(PKG_NAME) META \
         lib/fluent_logger.cma lib/fluent_logger.cmi \
         -optional \

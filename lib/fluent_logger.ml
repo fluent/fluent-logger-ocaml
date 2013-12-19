@@ -24,24 +24,26 @@ module Make = functor (Elm : SENDER_TYPE) -> struct
   let flush_buf logger =
     let buflen = Buffer.length logger.buf in
     let rec _write () =
-      let result = Elm.write logger.sender
-                  (Buffer.sub logger.buf logger.buf_pos buflen)
-                  logger.buf_pos
-                  (buflen - logger.buf_pos) in
-      match result with
-      | Some len -> (
-        logger.buf_pos <- logger.buf_pos + len;
-        if logger.buf_pos >= buflen then (
-          logger.buf_pos <- 0;
-          Buffer.clear logger.buf;
-          true
-        )
-        else _write ()
+      if logger.buf_pos >= buflen then (
+        logger.buf_pos <- 0;
+        Buffer.clear logger.buf;
+        true
       )
-      | None -> (
-        prerr_endline "flush_buf: write error";
-        Elm.close logger.sender;
-        false
+      else (
+        let result = Elm.write logger.sender
+                    (Buffer.sub logger.buf logger.buf_pos buflen)
+                    logger.buf_pos
+                    (buflen - logger.buf_pos) in
+        match result with
+        | Some len -> (
+          logger.buf_pos <- logger.buf_pos + len;
+          _write ()
+        )
+        | None -> (
+          prerr_endline "flush_buf: write error";
+          Elm.close logger.sender;
+          false
+        )
       )
     in
     _write ()
