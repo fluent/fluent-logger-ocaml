@@ -31,7 +31,7 @@ module Make = functor (Elm : SENDER_TYPE) -> struct
       )
       else (
         let result = Elm.write logger.sender
-                    (Buffer.sub logger.buf logger.buf_pos buflen)
+                    (Buffer.contents logger.buf)
                     logger.buf_pos
                     (buflen - logger.buf_pos) in
         match result with
