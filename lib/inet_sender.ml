@@ -31,6 +31,7 @@ let connect sender =
   | INET(host, port) -> (
     let socket = Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
     Unix.setsockopt socket Unix.TCP_NODELAY true;
+    Unix.set_close_on_exec socket;
     let server_addresses =
       Array.to_list((Unix.gethostbyname host).Unix.h_addr_list) in
     try (
