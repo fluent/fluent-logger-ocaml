@@ -1,11 +1,11 @@
-module type SENDER_TYPE =
+module type SENDER =
   sig
     type t
     val close : t -> unit
     val write : t -> string -> int -> int -> int option
   end
  
-module Make = functor (Elm : SENDER_TYPE) -> struct
+module Make = functor (Elm : SENDER) -> struct
 
   type t = {
     sender:Elm.t;
@@ -89,11 +89,16 @@ module Make = functor (Elm : SENDER_TYPE) -> struct
 
 end
 
-module Inet = Make(Inet_sender)
+module Stream = Make(Stream_sender)
 
 let create_for_inet ?(bufsize:int = 8 * 1024 * 1024) ?(conn_timeout:int = 3)
   ?(host:string = "localhost") ?(port:int = 24224) () = 
-  let sender = Inet_sender.create_for_inet ~conn_timeout ~host ~port () in
-  Inet.create_with_sender ~bufsize sender
+  let sender = Stream_sender.create_for_inet ~conn_timeout ~host ~port () in
+  Stream.create_with_sender ~bufsize sender
+
+let create_for_unix ?(bufsize:int = 8 * 1024 * 1024) ?(conn_timeout:int = 3)
+  path = 
+  let sender = Stream_sender.create_for_unix ~conn_timeout path in
+  Stream.create_with_sender ~bufsize sender
 
 let create = create_for_inet

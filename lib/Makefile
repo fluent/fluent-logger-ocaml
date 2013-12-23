@@ -1,5 +1,5 @@
 REQUIRES=msgpack
-SRCS=inet_sender.mli inet_sender.ml fluent_logger.mli fluent_logger.ml
+SRCS=stream_sender.mli stream_sender.ml fluent_logger.mli fluent_logger.ml
 
 .PHONY: all opt clean
 

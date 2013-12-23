@@ -1,11 +1,11 @@
-module type SENDER_TYPE =
+module type SENDER =
   sig
     type t
     val close : t -> unit
     val write : t -> string -> int -> int -> int option
   end
 module Make :
-  functor (Elm : SENDER_TYPE) ->
+  functor (Elm : SENDER) ->
     sig
       type t
       val create_with_sender : ?bufsize:int -> Elm.t -> t
@@ -25,10 +25,10 @@ module Make :
       val post : t -> string -> Msgpack.Serialize.t -> bool
       val release : t -> unit
     end
-module Inet :
+module Stream :
   sig
     type t
-    val create_with_sender : ?bufsize:int -> Inet_sender.t -> t
+    val create_with_sender : ?bufsize:int -> Stream_sender.t -> t
     val of_string : string -> [> `FixRaw of char list ]
     val uint8_of_int : 'a -> [> `Uint8 of 'a ]
     val uint16_of_int : 'a -> [> `Uint16 of 'a ]
@@ -46,7 +46,9 @@ module Inet :
   end
 val create_for_inet :
   ?bufsize:int ->
-  ?conn_timeout:int -> ?host:string -> ?port:int -> unit -> Inet.t
+  ?conn_timeout:int -> ?host:string -> ?port:int -> unit -> Stream.t
+val create_for_unix :
+  ?bufsize:int -> ?conn_timeout:int -> string -> Stream.t
 val create :
   ?bufsize:int ->
-  ?conn_timeout:int -> ?host:string -> ?port:int -> unit -> Inet.t
+  ?conn_timeout:int -> ?host:string -> ?port:int -> unit -> Stream.t

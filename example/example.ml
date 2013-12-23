@@ -1,7 +1,14 @@
 let () =
   Printexc.record_backtrace true;
-  let logger = Fluent_logger.create () in
-  let open Fluent_logger.Inet in
+  let logger = 
+    if Array.length Sys.argv > 0 then
+      (* use 'path' parameter for unix domain socket *)
+      Fluent_logger.create_for_unix Sys.argv.(1)
+    else
+      (* inet domain socket *)
+      Fluent_logger.create ()
+  in
+  let open Fluent_logger.Stream in
   let rec loop n i f = if i < n then (f i; loop n (i + 1) f) in
   loop 240 0 (fun i ->
     let result =
