@@ -3,7 +3,7 @@ let () =
   let logger = Fluent_logger.create () in
   let open Fluent_logger.Inet in
   let rec loop n i f = if i < n then (f i; loop n (i + 1) f) in
-  loop 50 0 (fun i ->
+  loop 240 0 (fun i ->
     let result =
       post logger "production" (
         `FixMap [
