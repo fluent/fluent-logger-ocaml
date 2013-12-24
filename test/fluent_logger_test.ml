@@ -1,34 +1,22 @@
 open OUnit
 
 module Q = Queue
+module FL = Fluent_logger
 
 type func = Write of (string * int * int) | Close
 
-module Mock_sender :
-  sig
-    type t
-    val create : int option Q.t -> t
-    val write : t -> string -> int -> int -> int option
-    val close : t -> unit
-    val func_list : t -> func Q.t
-  end =
-struct
-  type t = func Q.t * int option Q.t
+class mock_sender funcs results = object(self)
+  val func_list = funcs
 
-  let create results = (Q.create (), results)
+  val result_list = results
 
-  let write sender buf start len =
-      Q.push (Write (buf, start, len)) (fst sender);
-      Q.pop (snd sender)
+  method write buf start len : int option =
+      Q.push (Write (buf, start, len)) func_list;
+      Q.pop result_list
 
-  let close sender = Q.push Close (fst sender)
-
-  let func_list sender = fst sender
+  method close = Q.push Close func_list
 end
 
-module Mock_logger = Fluent_logger.Make(Mock_sender)
-module ML = Mock_logger
-module MS = Mock_sender
 type params = {
   tag:string; time:Int64.t; record:Msgpack.Serialize.t; packed:string
 }
@@ -65,18 +53,19 @@ let test_logger_post () =
   let results = Q.create () in
   Q.push (Some (String.length params.packed)) results;
   Q.push None results;
-  let sender = MS.create results in
-  let logger = ML.create_with_sender(sender) in
+  let funcs = Q.create () in
+  let sender = new mock_sender funcs results in
+  let logger = FL.create_with_sender(sender) in
   (* first sending (result:ok) *)
   assert_equal true
-    (ML.post_with_time logger params.tag params.record params.time);
+    (FL.post_with_time logger params.tag params.record params.time);
   assert_equal
     (Write (params.packed, 0, (String.length params.packed)))
-    (Q.pop (MS.func_list sender));
+    (Q.pop funcs);
   (* releasing logger *)
-  ML.release logger;
-  assert_equal Close (Q.pop (MS.func_list sender));
-  assert_equal 0 (Q.length (MS.func_list sender))
+  FL.release logger;
+  assert_equal Close (Q.pop funcs);
+  assert_equal 0 (Q.length funcs)
 
 let test_logger_post_sending_partial () =
   (* setup Mock_logger *)
@@ -93,19 +82,20 @@ let test_logger_post_sending_partial () =
   times write_count (fun _ _ -> Q.push (Some write_size) results) ();
   Q.push (Some last_write_size) results;
   Q.push None results;
-  let sender = MS.create results in
-  let logger = ML.create_with_sender(sender) in
+  let funcs = Q.create () in
+  let sender = new mock_sender funcs results in
+  let logger = FL.create_with_sender(sender) in
   (* first sending (result:ok) *)
-  assert_equal true (ML.post_with_time logger tag record time);
+  assert_equal true (FL.post_with_time logger tag record time);
   times (write_count + 1) (fun i _ ->
     assert_equal
       (Write (packed, i * write_size, packed_size - i * write_size))
-      (Q.pop (MS.func_list sender))
+      (Q.pop funcs)
   ) ();
   (* releasing logger *)
-  ML.release logger;
-  assert_equal Close (Q.pop (MS.func_list sender));
-  assert_equal 0 (Q.length (MS.func_list sender))
+  FL.release logger;
+  assert_equal Close (Q.pop funcs);
+  assert_equal 0 (Q.length funcs)
 
 let test_logger_post_retry () =
   (* setup Mock_logger *)
@@ -119,36 +109,37 @@ let test_logger_post_retry () =
     (String.length (List.nth params_list 2).packed)
   )) results;
   Q.push None results;
-  let sender = MS.create results in
-  let logger = ML.create_with_sender(sender) in
+  let funcs = Q.create () in
+  let sender = new mock_sender funcs results in
+  let logger = FL.create_with_sender(sender) in
   (* first sending (result:ok) *)
   let params = List.nth params_list 0 in
   assert_equal
-    true (ML.post_with_time logger params.tag params.record params.time);
+    true (FL.post_with_time logger params.tag params.record params.time);
   assert_equal
     (Write (params.packed, 0, (String.length params.packed)))
-    (Q.pop (MS.func_list sender));
+    (Q.pop funcs);
   (* second sending (result:ng) *)
   let params = List.nth params_list 1 in
   assert_equal
-    false (ML.post_with_time logger params.tag params.record params.time);
+    false (FL.post_with_time logger params.tag params.record params.time);
   assert_equal
     (Write (params.packed, 0, (String.length params.packed)))
-    (Q.pop (MS.func_list sender));
-  assert_equal Close (Q.pop (MS.func_list sender));
+    (Q.pop funcs);
+  assert_equal Close (Q.pop funcs);
   (* third sending (result:ok) *)
   let params = List.nth params_list 2 in
   assert_equal
-    true (ML.post_with_time logger params.tag params.record params.time);
+    true (FL.post_with_time logger params.tag params.record params.time);
   let joined_packed = 
     (List.nth params_list 1).packed ^ (List.nth params_list 2).packed in
   assert_equal
     (Write (joined_packed, 0, String.length joined_packed))
-    (Q.pop (MS.func_list sender));
+    (Q.pop funcs);
   (* releasing logger *)
-  ML.release logger;
-  assert_equal Close (Q.pop (MS.func_list sender));
-  assert_equal 0 (Q.length (MS.func_list sender))
+  FL.release logger;
+  assert_equal Close (Q.pop funcs);
+  assert_equal 0 (Q.length funcs)
 
 let test_logger_post_many_times () =
   (* setup Mock_logger *)
@@ -159,23 +150,24 @@ let test_logger_post_many_times () =
     Q.push (Some (String.length params.packed)) results;
   ) params_list;
   Q.push None results;
-  let sender = MS.create results in
-  let logger = ML.create_with_sender(sender) in
+  let funcs = Q.create () in
+  let sender = new mock_sender funcs results in
+  let logger = FL.create_with_sender(sender) in
   ignore (
     times loop_max (fun i _ ->
       let params = List.nth params_list i in
       (* sending (result:ok) *)
       assert_equal
-        true (ML.post_with_time logger params.tag params.record params.time);
+        true (FL.post_with_time logger params.tag params.record params.time);
       assert_equal
         (Write (params.packed, 0, (String.length params.packed)))
-        (Q.pop (MS.func_list sender));
+        (Q.pop funcs);
     ) ()
   );
   (* releasing logger *)
-  ML.release logger;
-  assert_equal Close (Q.pop (MS.func_list sender));
-  assert_equal 0 (Q.length (MS.func_list sender))
+  FL.release logger;
+  assert_equal Close (Q.pop funcs);
+  assert_equal 0 (Q.length funcs)
 
 let suite =
   "Fluent_logger tests" >:::

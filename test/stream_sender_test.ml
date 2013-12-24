@@ -38,15 +38,15 @@ let setup_test_server () =
 let test_inet_sender_write () =
   (* setup *)
   let (socket, port, get_accept_socket, get_recv_data) = setup_test_server () in
-  let sender = Stream_sender.create ~port:port () in
+  let sender = new Stream_sender.stream_sender 3 (Stream_sender.INET("localhost", port)) in
   (* first msg *)
   let msg1 = "helloworld" in
   let msg_len = String.length msg1 in
-  assert_equal (Some msg_len) (Stream_sender.write sender msg1 0 msg_len);
+  assert_equal (Some msg_len) (sender#write msg1 0 msg_len);
   (* second msg *)
   let msg2 = "abracadabra" in
   let msg_len = String.length msg2 in
-  assert_equal (Some msg_len) (Stream_sender.write sender msg2 0 msg_len);
+  assert_equal (Some msg_len) (sender#write msg2 0 msg_len);
   (* close server and then third msg *)
   U.sleep 1;
   let accept_socket = get_accept_socket () in
@@ -54,7 +54,7 @@ let test_inet_sender_write () =
   U.close socket;
   let msg = "foobar" in
   let msg_len = String.length msg in
-  assert_equal None (Stream_sender.write sender msg 0 msg_len);
+  assert_equal None (sender#write msg 0 msg_len);
   assert_equal (msg1 ^ msg2) (get_recv_data ())
 
 let suite =
