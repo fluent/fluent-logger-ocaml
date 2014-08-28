@@ -15,8 +15,7 @@ val post : t -> string -> Msgpack.Serialize.t -> bool
 val release : t -> unit
 val create_with_sender :
   ?bufsize:int ->
-  ?conn_timeout:int ->
-  < close : unit; write : string -> int -> int -> int option > -> t
+  ?conn_timeout:int -> Stream_sender.t -> t
 val create_for_inet :
   ?bufsize:int -> ?conn_timeout:int -> ?host:string -> ?port:int -> unit -> t
 val create_for_unix : ?bufsize:int -> ?conn_timeout:int -> string -> t

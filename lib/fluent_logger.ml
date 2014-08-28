@@ -1,5 +1,5 @@
 type t = {
-  sender:<close: unit; write: string -> int -> int -> int option>;
+  sender:Stream_sender.t;
   buf:Buffer.t;
   mutable buf_pos:int;
 }
@@ -9,7 +9,7 @@ let default_host = "localhost"
 let default_port = 24224
 let default_conn_timeout = 3
 
-let close logger = logger.sender#close
+let close logger = Stream_sender.close logger.sender
 
 let flush_buf logger =
   let buflen = Buffer.length logger.buf in
@@ -20,7 +20,7 @@ let flush_buf logger =
       true
     )
     else (
-      let result = logger.sender#write
+      let result = Stream_sender.write logger.sender
                     (Buffer.contents logger.buf)
                     logger.buf_pos
                     (buflen - logger.buf_pos) in
@@ -31,7 +31,7 @@ let flush_buf logger =
       )
       | None -> (
         prerr_endline "flush_buf: write error";
-        logger.sender#close;
+        Stream_sender.close logger.sender;
         false
       )
     )
@@ -91,15 +91,13 @@ let create_for_inet ?(bufsize = default_bufsize)
   ?(conn_timeout = default_conn_timeout)
   ?(host = default_host) ?(port = default_port) () =
   let sender =
-    new Stream_sender.stream_sender conn_timeout
-      (Stream_sender.INET(host, port)) in
+    Stream_sender.create (Stream_sender.INET(host, port)) conn_timeout in
   init sender bufsize
 
 let create_for_unix ?(bufsize = default_bufsize)
   ?(conn_timeout = default_conn_timeout) path =
   let sender =
-    new Stream_sender.stream_sender conn_timeout
-      (Stream_sender.UNIX(path)) in
+    Stream_sender.create (Stream_sender.UNIX(path)) conn_timeout in
   init sender bufsize
 
 let create = create_for_inet
