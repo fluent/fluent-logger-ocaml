@@ -1,21 +1,24 @@
 open OUnit
 
 module Q = Queue
-module FL = Fluent_logger
 
 type func = Write of (string * int * int) | Close
 
-class mock_sender funcs results = object(self)
-  val func_list = funcs
+module Mock_sender =
+  struct
+    type t = { func_list:func Q.t; result_list:int option Q.t }
 
-  val result_list = results
+    let create funcs results = { func_list=funcs; result_list=results }
 
-  method write buf start len : int option =
-      Q.push (Write (buf, start, len)) func_list;
-      Q.pop result_list
+    let write sender buf start len =
+        Q.push (Write (buf, start, len)) sender.func_list;
+        Q.pop sender.result_list
 
-  method close = Q.push Close func_list
-end
+    let close sender = Q.push Close sender.func_list
+  end
+
+module Mock_logger = Fluent_logger.Make(Mock_sender)
+module FL = Mock_logger
 
 type params = {
   tag:string; time:Int64.t; record:Msgpack.Serialize.t; packed:string
@@ -54,8 +57,8 @@ let test_logger_post () =
   Q.push (Some (String.length params.packed)) results;
   Q.push None results;
   let funcs = Q.create () in
-  let sender = new mock_sender funcs results in
-  let logger = FL.create_with_sender(sender) in
+  let sender = Mock_sender.create funcs results in
+  let logger = FL.create_with_sender sender in
   (* first sending (result:ok) *)
   assert_equal true
     (FL.post_with_time logger params.tag params.record params.time);
@@ -83,8 +86,8 @@ let test_logger_post_sending_partial () =
   Q.push (Some last_write_size) results;
   Q.push None results;
   let funcs = Q.create () in
-  let sender = new mock_sender funcs results in
-  let logger = FL.create_with_sender(sender) in
+  let sender = Mock_sender.create funcs results in
+  let logger = FL.create_with_sender sender in
   (* first sending (result:ok) *)
   assert_equal true (FL.post_with_time logger tag record time);
   times (write_count + 1) (fun i _ ->
@@ -110,8 +113,8 @@ let test_logger_post_retry () =
   )) results;
   Q.push None results;
   let funcs = Q.create () in
-  let sender = new mock_sender funcs results in
-  let logger = FL.create_with_sender(sender) in
+  let sender = Mock_sender.create funcs results in
+  let logger = FL.create_with_sender sender in
   (* first sending (result:ok) *)
   let params = List.nth params_list 0 in
   assert_equal
@@ -151,8 +154,8 @@ let test_logger_post_many_times () =
   ) params_list;
   Q.push None results;
   let funcs = Q.create () in
-  let sender = new mock_sender funcs results in
-  let logger = FL.create_with_sender(sender) in
+  let sender = Mock_sender.create funcs results in
+  let logger = FL.create_with_sender sender in
   ignore (
     times loop_max (fun i _ ->
       let params = List.nth params_list i in
